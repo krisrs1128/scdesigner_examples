@@ -1,8 +1,14 @@
+---
+title: Processing DE data
+---
+
+raw data available at smb://research.drive.wisc.edu/ksankaran/scdesigner/data/04_differential_expression_benchmark/SRP162188.rds
+
+```{r}
 library(zellkonverter)
 library(SingleCellExperiment)
 library(tidyverse)
 
-# raw data available at smb://research.drive.wisc.edu/ksankaran/scdesigner/data/04_differential_expression_benchmark/SRP162188.rds
 obj <- readRDS("SRP162188.rds")
 sce <- if (methods::is(obj, "SingleCellExperiment")) obj else as(obj, "SingleCellExperiment")
 
@@ -24,3 +30,4 @@ col_data <- as.data.frame(colData(sce)) |>
 
 colData(sce) <- DataFrame(col_data)
 writeH5AD(sce, "SRP162188.h5ad")
+```
