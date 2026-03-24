@@ -1,0 +1,35 @@
+---
+title: Prepare metacell data
+---
+
+```{r}
+library(tidyverse)
+library(mcRigor)
+library(Seurat)
+library(SingleCellExperiment)
+library(zellkonverter)
+```
+
+Here is the original singel cell Seurat Data discussed in the mcRigor vignette.
+
+```{r}
+sc_dir = system.file('extdata', 'syn.rds', package = 'mcRigor')
+obj_singlecell= readRDS(file = sc_dir)
+obj_singlecell
+```
+
+Here are putative metacells, here created using the SEACells method.
+
+```{r}
+membership_dir = system.file('extdata', 'seacells_cell_membership_rna_syn.csv', package = 'mcRigor')
+cell_membership_all <- read.csv(file = membership_dir, check.names = F, row.names = 1)
+cell_membership <- cell_membership_all['50']
+```
+
+Add `cell_membership` to the Seurat object metadata, convert to `SingleCellExperiment`, and export as h5ad.
+
+```{r}
+obj_singlecell <- AddMetaData(obj_singlecell, metadata = cell_membership)
+sce <- as.SingleCellExperiment(obj_singlecell)
+writeH5AD(sce, file = "mcrigor_intro_vignette.h5ad")
+```

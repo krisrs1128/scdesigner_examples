@@ -1,0 +1,36 @@
+---
+title: Prepare integration data
+---
+
+```{r}
+library(SummarizedExperiment)
+library(SingleCellExperiment)
+library(zellkonverter)
+
+atac_healthy <- readRDS("scATAC-Healthy-Hematopoiesis-191120.rds")
+rna_healthy <- readRDS("scRNA-Healthy-Hematopoiesis-191120.rds")
+mapping <- readRDS("scATAC-scRNA-mappings.rds")
+```
+
+```{r}
+colData(rna_healthy)
+colData(atac_healthy)
+head(mapping)
+```
+
+```{r}
+mapping_sub <- mapping[
+  mapping$x %in% colnames(atac_healthy) & mapping$y %in% colnames(rna_healthy),
+]
+
+atac_healthy <- as(atac_healthy[, mapping_sub$x], "SingleCellExperiment")
+rna_healthy <- as(rna_healthy[, mapping_sub$y], "SingleCellExperiment")
+assayNames(atac_healthy) <- "counts"
+assayNames(rna_healthy) <- "counts"
+assay(atac_healthy, "counts")
+metadata(atac_healthy) <- list()
+metadata(rna_healthy) <- list()
+
+writeH5AD(atac_healthy, "atac_healthy.h5ad", X_name = "counts", compression = "gzip")
+writeH5AD(rna_healthy, "rna_healthy.h5ad", X_name = "counts", compression = "gzip")
+```
