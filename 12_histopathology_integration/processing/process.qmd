@@ -6,6 +6,7 @@ format: html
 ```{r}
 library(SpatialExperiment)
 library(DropletUtils)
+library(anndataR)
 library(scuttle)
 library(jsonlite)
 library(fs)
@@ -107,7 +108,6 @@ read_visium <- function(gsm, sample_id) {
   )
 }
 
-list.files("../data/.staging/GSM7980860_N-1_visium/")
 read_visium(visium_meta$gsm[1], visium_meta$sample_id[1])
 visium_list <- pmap(visium_meta, \(gsm, sample_id) {
   read_visium(gsm, sample_id) |> qc_filter()
@@ -126,4 +126,22 @@ sc_list <- pmap(sc_meta, \(gsm, sample_id) {
 ```{r}
 saveRDS(visium_list, path(data_dir, "visium_spe_list.rds"))
 saveRDS(sc_list,     path(data_dir, "sc_sce_list.rds"))
+```
+
+```{r}
+h5ad_dir <- path(data_dir, "h5ad")
+dir_create(h5ad_dir)
+
+write_as_h5ad <- function(x, name) {
+  if (is(x, "SpatialExperiment")) {
+    reducedDim(x, "spatial") <- spatialCoords(x)
+  }
+  write_h5ad(x, h5ad_dir / glue("{name}.h5ad"))
+}
+
+all_list <- c(
+  set_names(visium_list, glue("visium_{names(visium_list)}")),
+  set_names(sc_list,     glue("sc_{names(sc_list)}"))
+)
+iwalk(all_list, write_as_h5ad)
 ```
