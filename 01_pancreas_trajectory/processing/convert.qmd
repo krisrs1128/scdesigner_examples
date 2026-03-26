@@ -1,0 +1,18 @@
+---
+title: Convert Pancreas Trajectory to RDS
+---
+
+Read the processed h5ad and save as an RDS for use in R workflows.
+
+```{r}
+library(anndataR)
+library(fs)
+
+data_dir <- "../data"
+
+sce <- read_h5ad(path(data_dir, "bastidas_ponce_etal.h5ad"))
+saveRDS(sce, path(data_dir, "bastidas_ponce_etal.rds"))
+
+sce <- read_h5ad(path(data_dir, "example_sce.h5ad"))
+saveRDS(sce, path(data_dir, "example_sce.rds"))
+```

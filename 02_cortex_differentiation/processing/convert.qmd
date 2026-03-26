@@ -1,0 +1,15 @@
+---
+title: Convert Cortex Differentiation Data to RDS
+---
+
+Read the processed h5ad and save as an RDS for use in R workflows.
+
+```{r}
+library(anndataR)
+library(fs)
+
+data_dir <- "../data"
+
+sce <- read_h5ad(path(data_dir, "DevVIS_scRNA_processed.h5ad"))
+saveRDS(sce, path(data_dir, "DevVIS_scRNA_processed.rds"))
+```

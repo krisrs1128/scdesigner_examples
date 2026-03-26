@@ -1,0 +1,15 @@
+---
+title: Convert Immune Batch Data
+---
+
+Read the processed h5ad and save as an RDS for use in R workflows.
+
+```{r}
+library(anndataR)
+library(fs)
+
+data_dir <- "../data"
+
+sce <- read_h5ad(path(data_dir, "pbmc3k_10x.h5ad"))
+saveRDS(sce, path(data_dir, "pbmc3k_10x.rds"))
+```
