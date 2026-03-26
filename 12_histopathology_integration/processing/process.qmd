@@ -1,0 +1,129 @@
+---
+title: "Histopathology Integration Processing"
+format: html
+---
+
+```{r}
+library(SpatialExperiment)
+library(DropletUtils)
+library(scuttle)
+library(jsonlite)
+library(fs)
+library(glue)
+library(tidyverse)
+
+raw_dir   <- path_abs("../raw/GSE250521_RAW")
+data_dir  <- path_abs("../data")
+stage_dir <- path(data_dir, ".staging")
+dir_create(c(data_dir, stage_dir))
+```
+
+```{r}
+parse_meta <- function(modality) {
+  dir_ls(raw_dir, regexp = glue("_{modality}_matrix")) |>
+    path_file() |>
+    str_match(glue("^(GSM[0-9]+)_([^_]+)_{modality}")) |>
+    as_tibble(.name_repair = "minimal") |>
+    set_names(c("match", "gsm", "sample_id")) |>
+    select(-match)
+}
+
+visium_meta <- parse_meta("visium")
+sc_meta     <- parse_meta("sc")
+```
+
+```{r}
+gunzip_bytes <- function(path) {
+  con <- gzcon(file(path, open = "rb"))
+  on.exit(close(con))
+  readBin(con, "raw", 50e6)
+}
+
+gunzip_to <- function(src, dest) writeBin(gunzip_bytes(src), dest)
+
+stage_expr <- function(gsm, sample_id, modality) {
+  prefix <- glue("{gsm}_{sample_id}_{modality}")
+  dest   <- dir_create(path(stage_dir, prefix))
+  walk(c("barcodes.tsv.gz", "features.tsv.gz", "matrix.mtx.gz"), \(f) {
+    d <- path(dest, f)
+    if (!file_exists(d)) link_create(path(raw_dir, glue("{prefix}_{f}")), d)
+  })
+  dest
+}
+
+qc_filter <- function(x, min_features = 200, min_counts = 1000,
+                      max_mito = 0.20, min_cells = 3) {
+  qc   <- perCellQCMetrics(x, subsets = list(mito = grepl("^MT-", rownames(x))))
+  keep <- qc$detected >= min_features &
+          qc$sum >= min_counts &
+          qc$subsets_mito_percent <= max_mito * 100
+  x    <- x[, keep]
+  x[rowSums(counts(x) > 0) >= min_cells, ]
+}
+```
+
+```{r}
+read_visium <- function(gsm, sample_id) {
+  prefix <- path(raw_dir, glue("{gsm}_{sample_id}_visium"))
+
+  sce <- read10xCounts(
+    stage_expr(gsm, sample_id, "visium"),
+    col.names = TRUE, sample.names = sample_id
+  )
+
+  positions <- read.csv(
+    glue("{prefix}_tissue_positions_list.csv.gz"),
+    header = FALSE,
+    col.names = c("barcode", "in_tissue", "array_row", "array_col", "pxl_row", "pxl_col")
+  )
+  in_tissue <- filter(positions, in_tissue == 1, barcode %in% colnames(sce))
+  sce <- sce[, in_tissue$barcode]
+
+  sf <- fromJSON(rawToChar(gunzip_bytes(glue("{prefix}_scalefactors_json.json.gz"))))
+
+  img_path <- path(stage_dir, glue("{gsm}_{sample_id}"), "tissue_hires_image.png")
+  if (!file_exists(img_path)) {
+    dir_create(path_dir(img_path))
+    gunzip_to(glue("{prefix}_tissue_hires_image.png.gz"), img_path)
+  }
+
+  coords <- `rownames<-`(
+    as.matrix(in_tissue[, c("pxl_col", "pxl_row")]),
+    in_tissue$barcode
+  )
+  spe <- SpatialExperiment(
+    assays        = list(counts = counts(sce)),
+    rowData       = rowData(sce),
+    colData       = colData(sce),
+    spatialCoords = coords,
+    sample_id     = sample_id
+  )
+  addImg(spe,
+    imageSource = as.character(img_path),
+    scaleFactor = sf$tissue_hires_scalef,
+    sample_id   = sample_id,
+    image_id    = "hires",
+    load        = TRUE
+  )
+}
+
+list.files("../data/.staging/GSM7980860_N-1_visium/")
+read_visium(visium_meta$gsm[1], visium_meta$sample_id[1])
+visium_list <- pmap(visium_meta, \(gsm, sample_id) {
+  read_visium(gsm, sample_id) |> qc_filter()
+}) |> set_names(visium_meta$sample_id)
+```
+
+```{r}
+sc_list <- pmap(sc_meta, \(gsm, sample_id) {
+  read10xCounts(
+    stage_expr(gsm, sample_id, "sc"),
+    col.names = TRUE, sample.names = sample_id
+  ) |> qc_filter()
+}) |> set_names(sc_meta$sample_id)
+```
+
+```{r}
+saveRDS(visium_list, path(data_dir, "visium_spe_list.rds"))
+saveRDS(sc_list,     path(data_dir, "sc_sce_list.rds"))
+```
