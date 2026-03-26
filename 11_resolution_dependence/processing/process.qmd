@@ -56,5 +56,5 @@ Save as RDS and h5ad.
 ```{r}
 dir_create(data_dir)
 saveRDS(spe, path(data_dir, "merfish.rds"))
-write_h5ad(spe, path(data_dir, "merfish.h5ad"))
+write_h5ad(spe, path(data_dir, "merfish.h5ad"), mode = "w")
 ```

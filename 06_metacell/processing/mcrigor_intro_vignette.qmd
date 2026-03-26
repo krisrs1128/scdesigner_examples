@@ -7,7 +7,7 @@ library(tidyverse)
 library(mcRigor)
 library(Seurat)
 library(SingleCellExperiment)
-library(zellkonverter)
+library(anndataR)
 ```
 
 Here is the original singel cell Seurat Data discussed in the mcRigor vignette.
@@ -31,5 +31,8 @@ Add `cell_membership` to the Seurat object metadata, convert to `SingleCellExper
 ```{r}
 obj_singlecell <- AddMetaData(obj_singlecell, metadata = cell_membership)
 sce <- as.SingleCellExperiment(obj_singlecell)
-writeH5AD(sce, file = "mcrigor_intro_vignette.h5ad")
+
+data_dir <- "../data"
+write_h5ad(sce, file.path(data_dir, "mcrigor_intro_vignette.h5ad"), mode = "w")
+saveRDS(sce, file.path(data_dir, "mcrigor_intro_vignette.rds"))
 ```

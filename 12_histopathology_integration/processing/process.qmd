@@ -136,7 +136,7 @@ write_as_h5ad <- function(x, name) {
   if (is(x, "SpatialExperiment")) {
     reducedDim(x, "spatial") <- spatialCoords(x)
   }
-  write_h5ad(x, h5ad_dir / glue("{name}.h5ad"))
+  write_h5ad(x, h5ad_dir / glue("{name}.h5ad"), mode = "w")
 }
 
 all_list <- c(

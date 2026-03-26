@@ -54,6 +54,6 @@ dir_create(h5ad_dir)
 
 iwalk(spes, \(spe, name) {
   reducedDim(spe, "spatial") <- colData(spe)[, c("array_row", "array_col")]
-  write_h5ad(spe, h5ad_dir / glue("{name}.h5ad"))
+  write_h5ad(spe, h5ad_dir / glue("{name}.h5ad"), mode = "w")
 })
 ```

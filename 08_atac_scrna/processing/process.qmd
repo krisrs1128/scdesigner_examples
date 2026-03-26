@@ -5,11 +5,14 @@ title: Prepare integration data
 ```{r}
 library(SummarizedExperiment)
 library(SingleCellExperiment)
-library(zellkonverter)
+library(anndataR)
 
-atac_healthy <- readRDS("scATAC-Healthy-Hematopoiesis-191120.rds")
-rna_healthy <- readRDS("scRNA-Healthy-Hematopoiesis-191120.rds")
-mapping <- readRDS("scATAC-scRNA-mappings.rds")
+raw_dir  <- "../raw"
+data_dir <- "../data"
+
+atac_healthy <- readRDS(file.path(raw_dir, "scATAC-Healthy-Hematopoiesis-191120.rds"))
+rna_healthy <- readRDS(file.path(raw_dir, "scRNA-Healthy-Hematopoiesis-191120.rds"))
+mapping <- readRDS(file.path(raw_dir, "scATAC-scRNA-mappings.rds"))
 ```
 
 ```{r}
@@ -25,12 +28,22 @@ mapping_sub <- mapping[
 
 atac_healthy <- as(atac_healthy[, mapping_sub$x], "SingleCellExperiment")
 rna_healthy <- as(rna_healthy[, mapping_sub$y], "SingleCellExperiment")
+
+# Ensure cell identifiers are unique for h5ad obs row names.
+colnames(atac_healthy) <- make.unique(colnames(atac_healthy))
+colnames(rna_healthy) <- make.unique(colnames(rna_healthy))
+rownames(colData(atac_healthy)) <- colnames(atac_healthy)
+rownames(colData(rna_healthy)) <- colnames(rna_healthy)
+
 assayNames(atac_healthy) <- "counts"
 assayNames(rna_healthy) <- "counts"
 assay(atac_healthy, "counts")
 metadata(atac_healthy) <- list()
 metadata(rna_healthy) <- list()
 
-writeH5AD(atac_healthy, "atac_healthy.h5ad", X_name = "counts", compression = "gzip")
-writeH5AD(rna_healthy, "rna_healthy.h5ad", X_name = "counts", compression = "gzip")
+dir.create(data_dir, showWarnings = FALSE)
+write_h5ad(atac_healthy, file.path(data_dir, "atac_healthy.h5ad"), compression = "gzip", mode = "w")
+write_h5ad(rna_healthy, file.path(data_dir, "rna_healthy.h5ad"), compression = "gzip", mode = "w")
+saveRDS(atac_healthy, file.path(data_dir, "atac_healthy.rds"))
+saveRDS(rna_healthy, file.path(data_dir, "rna_healthy.rds"))
 ```
