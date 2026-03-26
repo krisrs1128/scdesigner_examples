@@ -1,0 +1,59 @@
+---
+title: "Spatial Domains Processing"
+format: html
+---
+
+```{r}
+library(BayesSpace)
+library(scuttle)
+library(anndataR)
+library(SingleCellExperiment)
+library(fs)
+library(glue)
+library(purrr)
+
+raw_dir <- "../raw"
+data_dir <- "../data"
+```
+
+First unzip all the raw SpaceRanger outputs.
+
+```{r}
+dir_create(data_dir)
+tarballs <- dir_ls(raw_dir, glob = "*.tar.gz")
+walk(tarballs, ~ untar(.x, exdir = data_dir))
+```
+
+We can read the data using BayesSpace's read10Xh5.
+
+```{r}
+sample_dirs <- dir_ls(data_dir, type = "directory") |>
+  keep(~ dir_exists(path(.x, "spatial")))
+spes <- map(set_names(sample_dirs, path_file(sample_dirs)), read10Xh5)
+```
+
+This is the gene filtering step discussed in the paper.
+
+```{r}
+spes <- map(spes, \(spe) {
+  spe <- addPerCellQCMetrics(spe)
+  spe[, spe$detected >= 100 & spe$sum >= 100]
+})
+
+saveRDS(spes, path(data_dir) / "spes_filtered.rds")
+spes <- readRDS(path(data_dir) / "spes_filtered.rds")
+spes
+colData(spes[[1]])
+```
+
+We also save it into anndata objects for later use in python.
+
+```{r}
+h5ad_dir <- path(data_dir, "h5ad")
+dir_create(h5ad_dir)
+
+iwalk(spes, \(spe, name) {
+  reducedDim(spe, "spatial") <- colData(spe)[, c("array_row", "array_col")]
+  write_h5ad(spe, h5ad_dir / glue("{name}.h5ad"))
+})
+```

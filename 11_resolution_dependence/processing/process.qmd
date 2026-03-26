@@ -1,0 +1,60 @@
+---
+title: "Resolution Dependence Processing"
+format: html
+---
+
+```{r}
+library(SpatialExperiment)
+library(anndataR)
+library(fs)
+library(tidyverse)
+
+raw_dir <- "../raw"
+data_dir <- "../data"
+```
+
+First read in the raw merfish data as a CSV.
+
+```{r}
+raw <- read_csv(path(raw_dir, "merfish.csv"))
+gene_start <- which(colnames(raw) == "Ace2")
+cell_ids <- make.unique(as.character(raw$Cell_ID))
+```
+
+Build the colData and counts matrix.
+
+```{r}
+coldata_df <- raw |>
+  select(1:(gene_start - 1)) |>
+  as.data.frame()
+rownames(coldata_df) <- (cell_ids)
+
+counts_mat <- raw |>
+  select(gene_start:ncol(raw)) |>
+  data.matrix() |>
+  t()
+colnames(counts_mat) <- cell_ids
+```
+
+Combine into a SpatialExperiment.
+
+```{r}
+spatial_coords <- coldata_df[, c("Centroid_X", "Centroid_Y")] |>
+  as.matrix() |>
+  `storage.mode<-`("double")
+colnames(spatial_coords) <- c("x", "y")
+
+spe <- SpatialExperiment(
+  assays = list(counts = counts_mat),
+  colData = coldata_df,
+  spatialCoords = spatial_coords
+)
+```
+
+Save as RDS and h5ad.
+
+```{r}
+dir_create(data_dir)
+saveRDS(spe, path(data_dir, "merfish.rds"))
+write_h5ad(spe, path(data_dir, "merfish.h5ad"))
+```
