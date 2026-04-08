@@ -4,9 +4,6 @@ execute:
   eval: false
 ---
 
-This document consolidates the dataset download and conversion notes that were
-previously split across the R Markdown file and the Jupyter notebook.
-
 ## Dataset 1
 
 Sources:
@@ -101,10 +98,66 @@ data drive.
 
 ```{bash}
 while read gsm; do
-  prefix=${gsm:0:7}nnn
+  prefix=${gsm:0:7}
   url="ftp://ftp.ncbi.nlm.nih.gov/geo/samples/${prefix}/${gsm}/suppl/"
 
   echo "Downloading $gsm"
   wget -r -nH --cut-dirs=8 -np -R "index.html*" "$url"
 done < gsm_ids.txt
+```
+
+## Other Downloads
+
+There is some other miscellaneous downloading and conversion code that is not so
+organized but which we chose to keep.
+
+```{r}
+library(zellkonverter)
+SCGEMMETH_sce <- readRDS((url("https://figshare.com/ndownloader/files/40581998")))
+SCGEMRNA_sce <- readRDS((url("https://figshare.com/ndownloader/files/40582001")))
+writeH5AD(SCGEMMETH_sce, "multiomic_methylation.h5ad")
+writeH5AD(SCGEMRNA_sce, "multiomic_rna.h5ad")
+```
+
+```{r}
+example_sce <- readRDS((url("https://figshare.com/ndownloader/files/40581977")))
+writeH5AD(example_sce, "ifnb.h5ad")
+```
+
+```{r}
+example_sce <- readRDS((url("https://figshare.com/ndownloader/files/40581965")))
+writeH5AD(example_sce, "pbmcsca.h5ad")
+```
+
+```{r}
+example_sce <- readRDS((url("https://figshare.com/ndownloader/files/40582019")))
+writeH5AD(example_sce, "stxBrain.h5ad")
+```
+
+```{r}
+library(DuoClustering2018)
+sce <- get("sce_filteredExpr10_Zhengmix4eq")(metadata = FALSE)
+writeH5AD(sce, "sce_filteredExpr10_Zhengmix4eq.h5ad")
+```
+
+```{r}
+example_sce <- readRDS((url("https://figshare.com/ndownloader/files/40581980")))
+writeH5AD(example_sce, "GSE72859.h5ad")
+```
+
+```{r}
+MOBSC_sce <- readRDS((url("https://figshare.com/ndownloader/files/40581983")))
+MOBSP_sce <- readRDS((url("https://figshare.com/ndownloader/files/40581986")))
+writeH5AD(MOBSC_sce, "MOBSC_sce.h5ad")
+writeH5AD(MOBSP_sce, "MOBSP_sce.h5ad")
+```
+
+```{r}
+example_sce <- readRDS(url("https://figshare.com/ndownloader/files/40581962"))
+writeH5AD(example_sce, "atac.h5ad")
+```
+
+```{r}
+example_sce <- readRDS(url("https://figshare.com/ndownloader/files/40581968"))
+writeH5AD(example_sce, "cite_seq.h5ad")
 ```
