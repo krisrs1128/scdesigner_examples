@@ -5,9 +5,8 @@ import muon as mu
 from .scjoint import COMMIT
 
 
-def build_mdata(rna, atac, checksums):
+def build_mdata(rna, atac):
     mdata = mu.MuData({"rna": rna, "atac": atac})
-    mdata.uns["provenance"] = checksums
     mdata.uns["source_studies"] = {
         "rna": "Tabula Muris FACS and droplet data for gene expression",
         "atac": "Cusanovich mouse atlas, binarized gene activity from gene accessibility",
