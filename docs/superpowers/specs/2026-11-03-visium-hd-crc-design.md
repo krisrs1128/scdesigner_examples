@@ -1,12 +1,12 @@
 # Visium HD CRC input preparation design
 
-Status: proposed for review. No preprocessing implementation is included yet.
+Status: approved by the user, including the test-budget constraint below. No preprocessing implementation is included yet.
 
 ## Intent and agreed scope
 
 Prepare one Visium HD tumor section as an AnnData input for later scdesigner-based ClusterDE analysis. The user selected **P2CRC at 8 micrometer resolution**, with an easy way to switch sections. Follow the notebook-and-small-helpers style of `14_tabula_muris_integration/`.
 
-This is a small preprocessing addition. The implementation choices below are proposed defaults, not additional requirements supplied by the user.
+This is a small preprocessing addition. The implementation choices below were proposed defaults and accepted during design review.
 
 ## Approaches
 
@@ -63,6 +63,7 @@ The count matrix defines the retained barcodes. Reindex positions and annotation
 
 ## Constraints and exclusions
 
+- Keep the automated suite to at most 10 collected tests, comparable to the 10 tests in `14_tabula_muris_integration/tests/`. Use small shared fixtures and related assertions; do not expand parametrization, test infrastructure, or exhaustive case matrices to work around this budget. Ask before increasing it.
 - Preserve all supplied filtered-matrix bins and genes, including zero-count bins/genes. Report zero-count bins in QC; leave analysis-specific filtering to the later analysis.
 - No normalization, log transformation, HVG selection, imputation, random subsampling, or conversion of the full expression matrix to dense format.
 - Validate that counts are finite, nonnegative integers; coordinates are finite; source bin size is 8 micrometers; and `microns_per_pixel` is finite and positive.
@@ -73,7 +74,7 @@ The count matrix defines the retained barcodes. Reindex positions and annotation
 
 ## Acceptance checks
 
-Tests must cover sample-dependent URLs and paths, partial-download safety, unsupported samples, sparse count preservation, barcode-based joins with shuffled rows, invalid/duplicate/missing keys, duplicate gene symbols with distinct IDs, zero-count bins, coordinate order and units, uncertain/missing annotation values, and H5AD round-trip preservation.
+Within the test budget, cover sample-dependent URLs and paths, partial-download safety, unsupported samples, sparse count preservation, barcode-based joins with shuffled rows, representative invalid/duplicate/missing keys, duplicate gene symbols with distinct IDs, zero-count bins, coordinate order and units, uncertain/missing annotation values, and H5AD round-trip preservation. Combine related checks in the same test rather than adding a test for every field or validation branch.
 
 The real-data run uses P2CRC only. It must produce and reopen `15_visium_hd_crc/data/processed/P2CRC_008um.h5ad` with shape `(545913, 18085)`, unchanged sparse counts, matched finite coordinates, and preserved annotation uncertainty. Display bin/gene totals, zero-count-bin totals, and annotation coverage. Changing only `SAMPLE` must select P1CRC or P5CRC throughout the same notebook; tests exercise this without requiring additional large downloads.
 
