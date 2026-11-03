@@ -1,0 +1,23 @@
+name: scdesigner-examples
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - numpy
+  - pandas
+  - pyarrow
+  - scanpy
+  - anndata
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - jupyter
+  - muon
+  - mudata
+  - pytorch
+  - pytest
+  - pip
+  - pip:
+    - scdesigner
+    - scdiagnostics
