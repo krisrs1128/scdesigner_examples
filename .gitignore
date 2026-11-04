@@ -4,3 +4,6 @@
 *_files
 *html
 *.DS_Store
+*.pyc
+*.h5ad
+__pycache__
